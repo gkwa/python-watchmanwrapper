@@ -1,3 +1,5 @@
+include src/watchmanwrapper/templates/manifest.yaml.j2
+
 graft docs
 graft src
 graft ci
@@ -17,6 +19,5 @@ include CHANGELOG.rst
 include CONTRIBUTING.rst
 include LICENSE
 include README.rst
-
 
 global-exclude *.py[cod] __pycache__/* *.so *.dylib

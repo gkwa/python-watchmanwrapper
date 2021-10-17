@@ -14,23 +14,95 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
+import argparse
+import logging
+import pathlib
+import re
 import sys
+
+import jinja2
+import monacelli_pylog_prefs.logger
+import pkg_resources
+
+import watchmanwrapper.config
+import watchmanwrapper.manifest
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--log",
+    dest="logLevel",
+    default="INFO",
+    choices=[
+        "DEBUG",
+        "INFO",
+        "WARNING",
+        "ERROR",
+        "CRITICAL",
+        "debug",
+        "info",
+        "warning",
+        "error",
+        "critical",
+    ],
+    help="Set the logging level",
+)
+
+parser.add_argument(
+    "-l",
+    "--limit",
+    dest="filter",
+    default=".",
+    help="Filter by string",
+)
+
+package = __name__.split(".")[0]
+TEMPLATES_PATH = pathlib.Path(pkg_resources.resource_filename(package, "templates/"))
+
+
+# Custom filter method
+def regex_replace(s, find, replace):
+    """A non-optimal implementation of a regex filter"""
+    return re.sub(find, replace, s)
+
+
+outdir = pathlib.Path("/tmp/watchman")
+pathlib.Path.mkdir(outdir, parents=True, exist_ok=True)
 
 
 def main(argv=sys.argv):
-    manifest_path = pathlib.Path("manifest.yml")
-    col = ManifestCollection.from_file(manifest_path)
-    man = col[0]
-    print(man.dict())
+    args = parser.parse_args()
+    monacelli_pylog_prefs.logger.setup(
+        filename=f"{pathlib.Path(__file__).stem}.log",
+        stream_level=args.logLevel.upper(),
+    )
+    config = watchmanwrapper.config.Config()
+    if not config.path.exists():
+        config.write()
 
-    """
-    Args:
-        argv (list): List of arguments
+    logging.debug(f"reading from {config.path}")
+    manifest_collection = watchmanwrapper.manifest.ManifestCollection.from_file(
+        config.path
+    )
 
-    Returns:
-        int: A return code
+    template_loader = jinja2.FileSystemLoader(searchpath=TEMPLATES_PATH)
+    env = jinja2.Environment(loader=template_loader)
+    env.filters["regex_replace"] = regex_replace
 
-    Does stuff.
-    """
-    print(argv)
+    pattern = re.compile(args.filter)
+
+    for entry in manifest_collection:
+        template = env.get_template("bash.sh.j2")
+        path = outdir / f"{entry.name}.sh"
+        out = entry.render(template)
+        logging.debug(f"writing to {path}")
+        path.write_text(out)
+
+        path = outdir / f"{entry.name}.json"
+        man = watchmanwrapper.manifest.Watchman(
+            entry=entry, path=path, js=entry.to_json()
+        )
+        if pattern.search(str(path)):
+            man.write()
+            print(man.cmd)
+
     return 0

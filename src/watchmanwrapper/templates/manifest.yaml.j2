@@ -1,0 +1,19 @@
+list:
+
+- name: skaffold_getting_started
+  status: enabled
+  src: ~/pdev/skaffold_getting_started
+  dst:
+    dir: /root/skaffold_getting_started
+    user: billyboby
+    host: myhost.dns.com
+  sync: /usr/local/bin/rsync --verbose --archive --compress --no-links --exclude=.venv --exclude=^#*# --exclude=__pycache__ --exclude=*.log SRC/ DST
+
+- name: celery_playground
+  status: enabled
+  src: ~/pdev/celery_playground
+  dst:
+    dir: /root/celery_test
+    user: juniorjim
+    host: k3d.mydomain.com
+  sync: /usr/local/bin/rsync --verbose --archive --compress --no-links --exclude=.venv --exclude=^#*# --exclude=__pycache__ --exclude=*.log --exclude=.* SRC/ DST

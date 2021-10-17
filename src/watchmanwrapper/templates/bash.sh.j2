@@ -1,0 +1,6 @@
+#!/bin/bash
+
+{% set x = data.dst.user ~ '@' ~ data.dst.host ~ ':' ~ data.dst.dir -%}
+{% set src = data.src | regex_replace("/$", "") -%}
+{% set dst = data.dst.dir | regex_replace("/$", "") -%}
+{{ data.sync | replace('SRC', src) | replace('DST', x) }}
