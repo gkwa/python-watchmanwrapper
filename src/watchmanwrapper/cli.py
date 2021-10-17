@@ -18,6 +18,11 @@ import sys
 
 
 def main(argv=sys.argv):
+    manifest_path = pathlib.Path("manifest.yml")
+    col = ManifestCollection.from_file(manifest_path)
+    man = col[0]
+    print(man.dict())
+
     """
     Args:
         argv (list): List of arguments

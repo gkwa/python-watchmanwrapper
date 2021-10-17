@@ -1,0 +1,15 @@
+[
+  "trigger",
+  "{self.data.src}",
+  {{
+    "name": "{self.data.name}",
+    "expression": [
+      "allof",
+      [
+        "type",
+        "f"
+      ]
+    ],
+    "command": {json.dumps(self.data.sync)}
+  }}
+]
