@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import logging
+import os
 import pathlib
 import re
 import textwrap
@@ -79,7 +80,9 @@ class Watchman:
         p2 = self._quote(str(self.path.parent.resolve()))
         p3 = self._quote(str(self.path.resolve()))
 
+        username = os.getenv("USER", None)
         x = f"""\
+        tail -f /usr/local/var/run/watchman/{username}-state/log &
         watchman watch-list
         cat {p3}
         watchman watch {p1}

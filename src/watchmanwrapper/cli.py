@@ -66,7 +66,6 @@ def regex_replace(s, find, replace):
 
 
 outdir = pathlib.Path("/tmp/watchman")
-pathlib.Path.mkdir(outdir, parents=True, exist_ok=True)
 
 
 def main(argv=sys.argv):
@@ -93,6 +92,7 @@ def main(argv=sys.argv):
     for entry in manifest_collection:
         template = env.get_template("bash.sh.j2")
         path = outdir / f"{entry.name}.sh"
+        pathlib.Path.mkdir(outdir, parents=True, exist_ok=True)
         out = entry.render(template)
         logging.debug(f"writing to {path}")
         path.write_text(out)
