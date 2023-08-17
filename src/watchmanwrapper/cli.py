@@ -55,6 +55,14 @@ parser.add_argument(
     help="Filter by string",
 )
 
+parser.add_argument(
+    "-s",
+    "--show-commands",
+    action="store_true",
+    default=False,
+    help="Show a sequence of commands you could use if you didn't want to use this wrapper.",
+)
+
 package = __name__.split(".")[0]
 TEMPLATES_PATH = pathlib.Path(pkg_resources.resource_filename(package, "templates/"))
 
@@ -106,7 +114,8 @@ def main(argv=sys.argv):
         )
 
         man.write()
-        print(man.cmd)
+        if args.show_commands:
+            print(man.cmd)
 
         entry.run_flow()
 

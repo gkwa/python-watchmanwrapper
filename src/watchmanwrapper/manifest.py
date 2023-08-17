@@ -4,6 +4,7 @@ import logging
 import os
 import pathlib
 import re
+import shlex
 import subprocess
 import textwrap
 import typing
@@ -32,23 +33,26 @@ class ManifestEntry(pydantic.BaseModel):
     sync: str
 
     def run_flow(self):
-        p = subprocess.Popen(
-            ["watchman", "watch", self.src],
+        cmd = ["watchman", "watch", self.src]
+        sb = subprocess.Popen(
+            cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )
+        logging.debug(shlex.join(cmd))
 
-        stdout, stderr = p.communicate()
+        stdout, stderr = sb.communicate()
 
         if stdout:
-            print(stdout.decode())
+            logging.debug(stdout.decode())
 
         if stderr:
-            print(stderr.decode())
+            logging.debug(stderr.decode())
 
-        p = subprocess.Popen(
-            ["watchman", "--json-command"],
+        cmd = ["watchman", "--json-command"]
+        sb = subprocess.Popen(
+            cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -58,12 +62,31 @@ class ManifestEntry(pydantic.BaseModel):
         _jsonb = _json.encode(encoding="UTF-8")
 
         # just like: cat /path/to/file.json | watchman --json-command
-        stdout, stderr = p.communicate(input=_jsonb)
+        stdout, stderr = sb.communicate(input=_jsonb)
         if stdout:
-            print(stdout.decode())
+            logging.debug(stdout.decode())
 
         if stderr:
-            print(stderr.decode())
+            logging.debug(stderr.decode())
+
+        logging.debug(shlex.join(sb.args))
+
+        cmd = ["watchman", "watch-list"]
+        sb = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+        stdout, stderr = sb.communicate()
+        if stdout:
+            logging.debug(stdout.decode())
+
+        if stderr:
+            logging.debug(stderr.decode())
+
+        logging.debug(shlex.join(sb.args))
 
     def to_json(self):
         dst = self.dst.dir
