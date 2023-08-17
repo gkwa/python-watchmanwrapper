@@ -55,15 +55,6 @@ parser.add_argument(
     help="Filter by string",
 )
 
-
-parser.add_argument(
-    "--no-autorun",
-    action="store_true",
-    default=False,
-    help="Dont automatically run",
-)
-
-
 package = __name__.split(".")[0]
 TEMPLATES_PATH = pathlib.Path(pkg_resources.resource_filename(package, "templates/"))
 
@@ -101,10 +92,6 @@ def main(argv=sys.argv):
     for entry in manifest_collection:
         template = env.get_template("bash.sh.j2")
         path = outdir / f"{entry.name}.sh"
-
-        if not pattern.search(str(path)):
-            continue
-
         pathlib.Path.mkdir(outdir, parents=True, exist_ok=True)
         out = entry.render(template)
         logging.debug(f"writing to {path}")
@@ -114,9 +101,8 @@ def main(argv=sys.argv):
         man = watchmanwrapper.manifest.Watchman(
             entry=entry, path=path, js=entry.to_json()
         )
-
-        man.write()
-        if not args.no_autorun:
-            man.run_flow1()
+        if pattern.search(str(path)):
+            man.write()
+            print(man.cmd)
 
     return 0

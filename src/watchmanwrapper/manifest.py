@@ -3,10 +3,7 @@ import json
 import logging
 import os
 import pathlib
-import platform
 import re
-import shlex
-import subprocess
 import textwrap
 import typing
 
@@ -18,36 +15,6 @@ import yaml
 
 package = __name__.split(".")[0]
 TEMPLATES_PATH = pathlib.Path(pkg_resources.resource_filename(package, "templates/"))
-
-
-def run_command_with_timeout_and_capture(input_path):
-    command = "watchman --json-command"
-
-    if platform.system() == "Windows":
-        powershell_command = f"Get-Content {input_path} | {command}"
-        command = ["powershell.exe", "-Command", powershell_command]
-
-    else:
-        # On macOS and Linux, use 'cat' for file input
-        command = f"cat {input_path} | {command}"
-
-    try:
-        # Execute the command, capture stdout and stderr, enforce timeout
-        completed_process = subprocess.run(
-            shlex.split(command),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            timeout=3,
-        )
-
-        captured_stdout = completed_process.stdout
-        captured_stderr = completed_process.stderr
-
-        return captured_stdout, captured_stderr
-
-    except subprocess.TimeoutExpired:
-        return None, "Command execution timed out."
 
 
 class Destination(pydantic.BaseModel):
@@ -123,49 +90,6 @@ class Watchman:
         watchman watch-del-all
         """
         self.cmd = textwrap.dedent(x)
-
-    def run_flow1(self) -> list:
-        mydir = self._quote(str(self.entry.src))
-
-        cmd = ["watchman", "watch", mydir]
-
-        try:
-            completed_process = subprocess.run(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=2,
-            )
-
-            captured_stdout = completed_process.stdout
-            captured_stderr = completed_process.stderr
-
-        except subprocess.TimeoutExpired:
-            return None, "Command execution timed out."
-
-        if captured_stdout is not None:
-            print("Captured STDOUT:")
-            print(captured_stdout.strip())
-
-        if captured_stderr is not None:
-            print("Captured STDERR:")
-            print(captured_stderr.strip())
-
-        json_path = self._quote(str(self.path.resolve()))
-
-        x = pathlib.Path(json_path).read_text()
-        data = x.encode(encoding="UTF-8")
-
-        p = subprocess.Popen(
-            ["watchman", "--json-command"],
-            stdout=subprocess.PIPE,
-            stdin=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-
-        grep_stdout = p.communicate(input=data)[0]
-        print(grep_stdout.decode())
 
     def write(self):
         logging.debug(f"writing to {self.path}")
