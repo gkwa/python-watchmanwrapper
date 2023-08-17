@@ -18,14 +18,12 @@ TEMPLATES_PATH = pathlib.Path(pkg_resources.resource_filename(package, "template
 
 
 class Destination(pydantic.BaseModel):
-
     dir: str
     user: str
     host: str
 
 
 class ManifestEntry(pydantic.BaseModel):
-
     name: str
     status: str
     src: str
