@@ -4,6 +4,7 @@ import logging
 import os
 import pathlib
 import re
+import subprocess
 import textwrap
 import typing
 
@@ -29,6 +30,40 @@ class ManifestEntry(pydantic.BaseModel):
     src: str
     dst: Destination
     sync: str
+
+    def run_flow(self):
+        p = subprocess.Popen(
+            ["watchman", "watch", self.src],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+        stdout, stderr = p.communicate()
+
+        if stdout:
+            print(stdout.decode())
+
+        if stderr:
+            print(stderr.decode())
+
+        p = subprocess.Popen(
+            ["watchman", "--json-command"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+        _json = self.to_json()
+        _jsonb = _json.encode(encoding="UTF-8")
+
+        # just like: cat /path/to/file.json | watchman --json-command
+        stdout, stderr = p.communicate(input=_jsonb)
+        if stdout:
+            print(stdout.decode())
+
+        if stderr:
+            print(stderr.decode())
 
     def to_json(self):
         dst = self.dst.dir
