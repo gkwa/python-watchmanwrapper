@@ -126,18 +126,16 @@ class Watchman:
 
     def run_flow1(self) -> list:
         mydir = self._quote(str(self.entry.src))
-        json_path = self._quote(str(self.path.resolve()))
 
         cmd = ["watchman", "watch", mydir]
 
         try:
-            # Execute the command, capture stdout and stderr, enforce timeout
             completed_process = subprocess.run(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                timeout=3,
+                timeout=2,
             )
 
             captured_stdout = completed_process.stdout
@@ -148,11 +146,13 @@ class Watchman:
 
         if captured_stdout is not None:
             print("Captured STDOUT:")
-            print(f"[{captured_stdout}]")
+            print(captured_stdout.strip())
 
         if captured_stderr is not None:
             print("Captured STDERR:")
-            print(f"[{captured_stderr}]")
+            print(captured_stderr.strip())
+
+        json_path = self._quote(str(self.path.resolve()))
 
         cmd = ["cat", json_path]
         p1 = subprocess.Popen(cmd, stdout=subprocess.PIPE)
