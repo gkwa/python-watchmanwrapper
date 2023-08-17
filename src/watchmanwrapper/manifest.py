@@ -154,14 +154,18 @@ class Watchman:
 
         json_path = self._quote(str(self.path.resolve()))
 
-        cmd = ["cat", json_path]
-        p1 = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        x = pathlib.Path(json_path).read_text()
+        data = x.encode(encoding="UTF-8")
 
-        cmd = ["watchman", "--json-command"]
-        p2 = subprocess.Popen(cmd, stdin=p1.stdout)
+        p = subprocess.Popen(
+            ["watchman", "--json-command"],
+            stdout=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
 
-        p1.stdout.close()
-        p2.communicate()
+        grep_stdout = p.communicate(input=data)[0]
+        print(grep_stdout.decode())
 
     def write(self):
         logging.debug(f"writing to {self.path}")
