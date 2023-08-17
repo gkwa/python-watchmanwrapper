@@ -103,12 +103,12 @@ def main(argv=sys.argv):
         path.write_text(out)
 
         path = outdir / f"{entry.name}.json"
-        woman = watchmanwrapper.manifest.Watchman(
+        man = watchmanwrapper.manifest.Watchman(
             entry=entry, path=path, js=entry.to_json()
         )
 
-        woman.write()
-        print(woman.cmd)
+        man.write()
+        print(man.cmd)
 
         entry.run_flow()
 
