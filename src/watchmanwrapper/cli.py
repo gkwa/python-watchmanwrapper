@@ -108,4 +108,6 @@ def main(argv=sys.argv):
         man.write()
         print(man.cmd)
 
+        entry.run_flow()
+
     return 0
