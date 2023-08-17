@@ -92,6 +92,9 @@ def main(argv=sys.argv):
     for entry in manifest_collection:
         template = env.get_template("bash.sh.j2")
         path = outdir / f"{entry.name}.sh"
+        if not pattern.search(str(path)):
+            continue
+
         pathlib.Path.mkdir(outdir, parents=True, exist_ok=True)
         out = entry.render(template)
         logging.debug(f"writing to {path}")
@@ -101,8 +104,8 @@ def main(argv=sys.argv):
         man = watchmanwrapper.manifest.Watchman(
             entry=entry, path=path, js=entry.to_json()
         )
-        if pattern.search(str(path)):
-            man.write()
-            print(man.cmd)
+
+        man.write()
+        print(man.cmd)
 
     return 0
