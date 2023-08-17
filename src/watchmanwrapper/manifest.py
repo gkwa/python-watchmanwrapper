@@ -3,7 +3,10 @@ import json
 import logging
 import os
 import pathlib
+import platform
 import re
+import shlex
+import subprocess
 import textwrap
 import typing
 
@@ -15,6 +18,36 @@ import yaml
 
 package = __name__.split(".")[0]
 TEMPLATES_PATH = pathlib.Path(pkg_resources.resource_filename(package, "templates/"))
+
+
+def run_command_with_timeout_and_capture(input_path):
+    command = "watchman --json-command"
+
+    if platform.system() == "Windows":
+        powershell_command = f"Get-Content {input_path} | {command}"
+        command = ["powershell.exe", "-Command", powershell_command]
+
+    else:
+        # On macOS and Linux, use 'cat' for file input
+        command = f"cat {input_path} | {command}"
+
+    try:
+        # Execute the command, capture stdout and stderr, enforce timeout
+        completed_process = subprocess.run(
+            shlex.split(command),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=3,
+        )
+
+        captured_stdout = completed_process.stdout
+        captured_stderr = completed_process.stderr
+
+        return captured_stdout, captured_stderr
+
+    except subprocess.TimeoutExpired:
+        return None, "Command execution timed out."
 
 
 class Destination(pydantic.BaseModel):
@@ -91,6 +124,45 @@ class Watchman:
         """
         self.cmd = textwrap.dedent(x)
 
+    def run_flow1(self) -> list:
+        mydir = self._quote(str(self.entry.src))
+        json_path = self._quote(str(self.path.resolve()))
+
+        cmd = ["watchman", "watch", mydir]
+
+        try:
+            # Execute the command, capture stdout and stderr, enforce timeout
+            completed_process = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=3,
+            )
+
+            captured_stdout = completed_process.stdout
+            captured_stderr = completed_process.stderr
+
+        except subprocess.TimeoutExpired:
+            return None, "Command execution timed out."
+
+        if captured_stdout is not None:
+            print("Captured STDOUT:")
+            print(f"[{captured_stdout}]")
+
+        if captured_stderr is not None:
+            print("Captured STDERR:")
+            print(f"[{captured_stderr}]")
+
+        cmd = ["cat", json_path]
+        p1 = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+
+        cmd = ["watchman", "--json-command"]
+        p2 = subprocess.Popen(cmd, stdin=p1.stdout)
+
+        p1.stdout.close()
+        p2.communicate()
+
     def write(self):
         logging.debug(f"writing to {self.path}")
         self.path.write_text(self.js)
@@ -99,6 +171,21 @@ class Watchman:
         if re.search(" ", s):
             s = f'"{s}"'
         return s
+
+
+def run_command(cmd):
+    try:
+        result = subprocess.run(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        if result.returncode == 0:
+            print("Command executed successfully:")
+            print(result.stdout)
+        else:
+            print("Command execution failed:")
+            print(result.stderr)
+    except subprocess.CalledProcessError as e:
+        print("Error:", e)
 
 
 @dataclasses.dataclass
